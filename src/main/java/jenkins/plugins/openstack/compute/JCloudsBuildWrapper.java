@@ -23,6 +23,7 @@ import jenkins.plugins.openstack.compute.internal.ProvisionPlannedInstancesAndDe
 import jenkins.plugins.openstack.compute.internal.RunningNode;
 import jenkins.plugins.openstack.compute.internal.TerminateNodes;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -74,10 +75,12 @@ public class JCloudsBuildWrapper extends BuildWrapper {
         final Iterable<RunningNode> runningNode = provisioner.apply(nodePlans);
 
         final String ipsString = getIpsString(runningNode);
+        final String nodeNamesString = getNodeNamesString(runningNode);
         return new Environment() {
             @Override
             public void buildEnvVars(Map<String, String> env) {
                 env.put("JCLOUDS_IPS", ipsString);
+                env.put("JCLOUD_NODE_NAMES", nodeNamesString);
             }
 
             @Override
@@ -86,6 +89,16 @@ public class JCloudsBuildWrapper extends BuildWrapper {
                 return true;
             }
         };
+    }
+
+    private @Nonnull String getNodeNamesString(final Iterable<RunningNode> runningNodes){
+
+        final List<String> nodeNames = new ArrayList<>(instancesToRun.size());
+        for(RunningNode node: runningNodes){
+            String nodeName = node.getNode().getInstanceName();
+            nodeNames.add(StringUtils.defaultString(nodeName));
+        }
+        return StringUtils.join(nodeNames, ",");
     }
 
     private @Nonnull String getIpsString(final Iterable<RunningNode> runningNodes) {
